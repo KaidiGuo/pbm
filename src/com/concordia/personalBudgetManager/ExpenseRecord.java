@@ -1,9 +1,10 @@
 package com.concordia.personalBudgetManager;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 
 public class ExpenseRecord {
-	public enum expenseTypeE{Purchase,Bill};
+	public enum expenseTypeE{Purchase,Bill,Composite};
 	public enum paymentTypeE{paidByCash,paidByDebit,dueByCredit};
 	public enum repetitionIntervalE{Once,Day,Bidaily,Weekly,Biweekly,Monthly,Yearly};
 	public enum recordFieldE					{amount,	paid,	paidDate,		expenseType,			paymentType,				repetitionInterval,		retailerName,	retailerLocation,	operationDate,		otherDetails};
@@ -19,28 +20,30 @@ public class ExpenseRecord {
 	private String retailerName, retailerLocation, otherDetails;
 	private LocalDate operationDate, paidDate;
 	private Object[] record;
+	private ArrayList<ExpenseRecord> subRecords = new ArrayList<ExpenseRecord>();
 	
-	ExpenseRecord() {
+	public ExpenseRecord() {
 		this(nullRecord);
 	}
 	
-	ExpenseRecord(double amount, Boolean paid, LocalDate paidDate, expenseTypeE expenseType, paymentTypeE statusDescription,
-			repetitionIntervalE repetitionInterval, String retailerName, String retailerLocation, LocalDate operationDate, String otherDetails) {
+	public ExpenseRecord(double amount, Boolean paid, LocalDate paidDate, expenseTypeE expenseType, paymentTypeE paymentType,
+						 repetitionIntervalE repetitionInterval, String retailerName, String retailerLocation, LocalDate operationDate, String otherDetails) {
 		this.amount = amount;
 		this.paid = paid;
 		this.paidDate = operationDate;
-		this.expenseType = expenseTypeE.Purchase;
-		this.paymentType = paymentTypeE.dueByCredit;
-		this.repetitionInterval = repetitionIntervalE.Once;
+		this.expenseType = expenseType;
+		this.paymentType = paymentType;
+		this.repetitionInterval = repetitionInterval;
 		this.retailerName = retailerName;
 		this.retailerLocation = retailerLocation;
 		this.operationDate = operationDate;
 		this.otherDetails = otherDetails;
-		Object[] recordBody = {this.amount, this.paid, this.paidDate, this.expenseType, this.paymentType, this.repetitionInterval, this.retailerName, this.retailerLocation, this.operationDate, this.otherDetails};
+		Object[] recordBody = {this.amount, this.paid, this.paidDate, this.expenseType, this.paymentType, this.repetitionInterval,
+				this.retailerName, this.retailerLocation, this.operationDate, this.otherDetails};
 		this.record = recordBody;
 	}
 	
-	ExpenseRecord(Object[] record) {
+	public ExpenseRecord(Object[] record) {
 		this.amount = (double) record[recordFieldE.amount.ordinal()];
 		this.paid = (boolean) record[recordFieldE.paid.ordinal()];
 		this.paidDate = (LocalDate) record[recordFieldE.paidDate.ordinal()];
@@ -58,13 +61,15 @@ public class ExpenseRecord {
 	public boolean getPaid() {return this.paid;}
 	public LocalDate getPaidDate() {return this.paidDate;}
 	public expenseTypeE getExpenseType(){return this.expenseType;}
-	public paymentTypeE getpaymentType(){return this.paymentType;}
+	public paymentTypeE getPaymentType(){return this.paymentType;}
 	public repetitionIntervalE getRepetitionInterval(){return this.repetitionInterval;}
 	public String getRetailerName(){return this.retailerName;}
 	public String getRetailerLocation(){return this.retailerLocation;}
 	public LocalDate getOperationDate(){return this.operationDate;}
 	public String getOtherDetails(){return this.otherDetails;}
 	public Object[] getRecord() {return this.record;}
+	public ExpenseRecord getSubRecord(int recordId) {return this.subRecords.get(recordId);}
+	public int getSubRecordsCount() {return this.subRecords.size();}
 	
 	public void setAmount(double amount) {this.amount=amount;}
 	public void setPaid(boolean paid) {this.paid=paid;}
@@ -77,4 +82,19 @@ public class ExpenseRecord {
 	public void setOperationDate(LocalDate operationDate){this.operationDate=operationDate;}	
 	public void setOtherDetails(String otherDetails){this.otherDetails=otherDetails;}
 	public void setRecord(Object[] record) {this.record=record;}
+	public void insertSubRecord(int recordId, Object[] someRecord) {this.subRecords.add(recordId, new ExpenseRecord(someRecord));validateMaster();}
+	public void insertSubRecord(int recordId, ExpenseRecord someRecord) {this.subRecords.add(recordId, someRecord);validateMaster();}
+	public void addSubRecord(Object[] someRecord) {this.subRecords.add(new ExpenseRecord(someRecord));validateMaster();}
+	public void addSubRecord(ExpenseRecord someRecord) {this.subRecords.add(someRecord);validateMaster();}
+	public void removeSubRecord(int recordId) {this.subRecords.remove(recordId);validateMaster();}
+	
+	public void validateMaster() {
+		double sumAmount=0.0; boolean sumPaid=true;
+		for(int i=0; i<this.getSubRecordsCount(); i++) {
+			sumAmount += subRecords.get(i).amount;
+			sumPaid &= subRecords.get(i).paid;
+		}
+		this.amount=sumAmount; this.record[recordFieldE.amount.ordinal()]=sumAmount;
+		this.paid=sumPaid; this.record[recordFieldE.paid.ordinal()]=sumPaid;
+	}
 }
